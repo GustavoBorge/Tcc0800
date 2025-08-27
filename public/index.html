@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Barbearia IA</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-cut"></i> Barbearia IA</h1>
+                <p>Sistema de Gerenciamento Inteligente</p>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="nav">
+            <button class="nav-btn active" data-tab="dashboard">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </button>
+            <button class="nav-btn" data-tab="clientes">
+                <i class="fas fa-users"></i> Clientes
+            </button>
+            <button class="nav-btn" data-tab="funcionarios">
+                <i class="fas fa-user-tie"></i> Funcionários
+            </button>
+            <button class="nav-btn" data-tab="servicos">
+                <i class="fas fa-concierge-bell"></i> Serviços
+            </button>
+            <button class="nav-btn" data-tab="agendamentos">
+                <i class="fas fa-calendar-alt"></i> Agendamentos
+            </button>
+            <button class="nav-btn" data-tab="vendas">
+                <i class="fas fa-cash-register"></i> Vendas
+            </button>
+            <button class="nav-btn" data-tab="relatorios">
+                <i class="fas fa-chart-bar"></i> Relatórios
+            </button>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard -->
+            <div id="dashboard" class="tab-content active">
+                <div class="dashboard-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-users"></i> Total de Clientes</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="stat-number" id="total-clientes">0</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-user-tie"></i> Funcionários Ativos</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="stat-number" id="total-funcionarios">0</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-calendar-check"></i> Agendamentos Hoje</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="stat-number" id="agendamentos-hoje">0</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-dollar-sign"></i> Vendas do Mês</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="stat-number" id="vendas-mes">R$ 0,00</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="dashboard-charts">
+                    <div class="card full-width">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chart-line"></i> Vendas dos Últimos 7 Dias</h3>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="vendasChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clientes -->
+            <div id="clientes" class="tab-content">
+                <div class="section-header">
+                    <h2><i class="fas fa-users"></i> Gerenciamento de Clientes</h2>
+                    <button class="btn btn-primary" onclick="openModal('cliente')">
+                        <i class="fas fa-plus"></i> Novo Cliente
+                    </button>
+                </div>
+                
+                <div class="search-bar">
+                    <input type="text" id="search-clientes" placeholder="Buscar clientes..." class="search-input">
+                    <i class="fas fa-search search-icon"></i>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table" id="clientes-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>CPF</th>
+                                <th>Telefone</th>
+                                <th>Email</th>
+                                <th>Data Cadastro</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientes-tbody">
+                            <!-- Dados serão carregados via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Funcionários -->
+            <div id="funcionarios" class="tab-content">
+                <div class="section-header">
+                    <h2><i class="fas fa-user-tie"></i> Gerenciamento de Funcionários</h2>
+                    <button class="btn btn-primary" onclick="openModal('funcionario')">
+                        <i class="fas fa-plus"></i> Novo Funcionário
+                    </button>
+                </div>
+                
+                <div class="search-bar">
+                    <input type="text" id="search-funcionarios" placeholder="Buscar funcionários..." class="search-input">
+                    <i class="fas fa-search search-icon"></i>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table" id="funcionarios-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Telefone</th>
+                                <th>Status</th>
+                                <th>Data Cadastro</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="funcionarios-tbody">
+                            <!-- Dados serão carregados via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Serviços -->
+            <div id="servicos" class="tab-content">
+                <div class="section-header">
+                    <h2><i class="fas fa-concierge-bell"></i> Gerenciamento de Serviços</h2>
+                    <button class="btn btn-primary" onclick="openModal('servico')">
+                        <i class="fas fa-plus"></i> Novo Serviço
+                    </button>
+                </div>
+                
+                <div class="search-bar">
+                    <input type="text" id="search-servicos" placeholder="Buscar serviços..." class="search-input">
+                    <i class="fas fa-search search-icon"></i>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table" id="servicos-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Descrição</th>
+                                <th>Duração</th>
+                                <th>Preço</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="servicos-tbody">
+                            <!-- Dados serão carregados via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Agendamentos -->
+            <div id="agendamentos" class="tab-content">
+                <div class="section-header">
+                    <h2><i class="fas fa-calendar-alt"></i> Gerenciamento de Agendamentos</h2>
+                    <button class="btn btn-primary" onclick="openModal('agendamento')">
+                        <i class="fas fa-plus"></i> Novo Agendamento
+                    </button>
+                </div>
+                
+                <div class="search-bar">
+                    <input type="text" id="search-agendamentos" placeholder="Buscar agendamentos..." class="search-input">
+                    <i class="fas fa-search search-icon"></i>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table" id="agendamentos-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Cliente</th>
+                                <th>Funcionário</th>
+                                <th>Serviço</th>
+                                <th>Data</th>
+                                <th>Hora</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="agendamentos-tbody">
+                            <!-- Dados serão carregados via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Vendas -->
+            <div id="vendas" class="tab-content">
+                <div class="section-header">
+                    <h2><i class="fas fa-cash-register"></i> Gerenciamento de Vendas</h2>
+                    <button class="btn btn-primary" onclick="openModal('venda')">
+                        <i class="fas fa-plus"></i> Nova Venda
+                    </button>
+                </div>
+                
+                <div class="search-bar">
+                    <input type="text" id="search-vendas" placeholder="Buscar vendas..." class="search-input">
+                    <i class="fas fa-search search-icon"></i>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table" id="vendas-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Cliente</th>
+                                <th>Funcionário</th>
+                                <th>Serviço</th>
+                                <th>Valor</th>
+                                <th>Pagamento</th>
+                                <th>Data</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vendas-tbody">
+                            <!-- Dados serão carregados via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Relatórios -->
+            <div id="relatorios" class="tab-content">
+                <div class="section-header">
+                    <h2><i class="fas fa-chart-bar"></i> Relatórios</h2>
+                </div>
+                
+                <div class="reports-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Relatório de Vendas</h3>
+                        </div>
+                        <div class="card-body">
+                            <button class="btn btn-secondary" onclick="gerarRelatorioVendas()">
+                                <i class="fas fa-download"></i> Gerar Relatório
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Relatório de Agendamentos</h3>
+                        </div>
+                        <div class="card-body">
+                            <button class="btn btn-secondary" onclick="gerarRelatorioAgendamentos()">
+                                <i class="fas fa-download"></i> Gerar Relatório
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Relatório de Clientes</h3>
+                        </div>
+                        <div class="card-body">
+                            <button class="btn btn-secondary" onclick="gerarRelatorioClientes()">
+                                <i class="fas fa-download"></i> Gerar Relatório
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Título do Modal</h3>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="modal-form">
+                    <!-- Campos serão preenchidos dinamicamente -->
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveData()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Carregando...</p>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
