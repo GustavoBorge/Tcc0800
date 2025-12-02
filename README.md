@@ -15,9 +15,9 @@ Sistema completo de gerenciamento para barbearia com interface moderna e integra
 
 ## 🛠️ Tecnologias Utilizadas
 
-- **Backend**: Node.js + Express
+- **Backend**: Node.js + Express (servidor estático em `server.js`)
 - **Banco de Dados**: MySQL
-- **Frontend**: HTML5, CSS3, JavaScript (Vanilla)
+- **Frontend**: HTML5, CSS3, JavaScript (Vanilla) em `public/`
 - **Gráficos**: Chart.js
 - **Ícones**: Font Awesome
 - **Design**: CSS Grid, Flexbox, Gradientes
@@ -183,17 +183,17 @@ JWT_SECRET=sua_chave_secreta_aqui
 ```
 
 ### 4. Inicie o servidor
-```bash
+```powershell
 npm start
 ```
 
-Para desenvolvimento com auto-reload:
-```bash
-npm run dev
-```
-
 ### 5. Acesse a aplicação
-Abra seu navegador e acesse: `http://localhost:8081`
+Abra seu navegador e acesse: `http://localhost:8081`.
+Páginas principais:
+- Home: `/` (servindo `public/home.html`)
+- Login: `/login` (servindo `public/login.html`)
+- Cliente: `/cliente` (servindo `public/cliente.html`)
+- Funcionário: `/funcionario` (arquivos estáticos em `public/funcionario/`)
 
 ## 📱 Como Usar
 

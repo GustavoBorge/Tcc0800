@@ -3,6 +3,7 @@ let currentTab = 'dashboard';
 let currentEditId = null;
 let currentEditType = null;
 let vendasChart = null;
+let currentUser = null;
 
 // Inicialização da aplicação
 document.addEventListener('DOMContentLoaded', function() {
@@ -10,10 +11,18 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeApp() {
+    // Verificar autenticação
+    checkAuthentication();
+    
     setupNavigation();
     setupSearchBars();
-    loadDashboard();
+    setupSidebar();
     setupEventListeners();
+    
+    if (currentUser) {
+        loadDashboard();
+        updateUserInfo();
+    }
 }
 
 // Configuração da navegação
@@ -61,6 +70,9 @@ function switchTab(tabName) {
         case 'relatorios':
             loadRelatorios();
             break;
+        case 'config':
+            loadConfig();
+            break;
     }
 }
 
@@ -90,6 +102,76 @@ function filterTable(tableId, searchTerm) {
     });
 }
 
+// Verificar autenticação
+function checkAuthentication() {
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    
+    if (!token || !user) {
+        window.location.href = '/login.html';
+        return;
+    }
+    
+    try {
+        currentUser = JSON.parse(user);
+        
+        // Redirecionar funcionários para sua tela específica
+        if (currentUser.role === 'funcionario' || currentUser.role === 'gerente') {
+            window.location.href = '/funcionario.html';
+            return;
+        }
+    } catch (e) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login.html';
+    }
+}
+
+// Atualizar informações do usuário
+function updateUserInfo() {
+    const userInfo = document.getElementById('user-info');
+    if (userInfo && currentUser) {
+        userInfo.innerHTML = `<i class="fas fa-user"></i> ${currentUser.nome} (${currentUser.role})`;
+    }
+}
+
+// Configuração do sidebar
+function setupSidebar() {
+    const hamburgerBtn = document.getElementById('hamburger-btn');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarClose = document.getElementById('sidebar-close');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    
+    hamburgerBtn.addEventListener('click', () => {
+        sidebar.classList.add('open');
+        sidebarOverlay.classList.add('open');
+        hamburgerBtn.classList.add('active');
+    });
+    
+    sidebarClose.addEventListener('click', closeSidebar);
+    sidebarOverlay.addEventListener('click', closeSidebar);
+    
+    // Logout
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login.html';
+        });
+    }
+}
+
+function closeSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    const hamburgerBtn = document.getElementById('hamburger-btn');
+    
+    sidebar.classList.remove('open');
+    sidebarOverlay.classList.remove('open');
+    hamburgerBtn.classList.remove('active');
+}
+
 // Setup de event listeners
 function setupEventListeners() {
     // Fechar modal ao clicar fora
@@ -112,11 +194,17 @@ function setupEventListeners() {
 async function loadDashboard() {
     showLoading();
     try {
+        const token = localStorage.getItem('token');
+        const headers = {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        };
+        
         const [clientes, funcionarios, agendamentos, vendas] = await Promise.all([
-            fetch('/api/clientes').then(res => res.json()),
-            fetch('/api/funcionarios').then(res => res.json()),
-            fetch('/api/agendamentos').then(res => res.json()),
-            fetch('/api/vendas').then(res => res.json())
+            fetch('/api/clientes', { headers }).then(res => res.json()),
+            fetch('/api/funcionarios', { headers }).then(res => res.json()),
+            fetch('/api/agendamentos', { headers }).then(res => res.json()),
+            fetch('/api/vendas', { headers }).then(res => res.json())
         ]);
         
         updateDashboardStats(clientes, funcionarios, agendamentos, vendas);
@@ -238,18 +326,17 @@ function renderClientesTable(clientes) {
     clientes.forEach(cliente => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${cliente.id_cliente}</td>
+            <td>${cliente.id_usuario}</td>
             <td>${cliente.nome}</td>
-            <td>${cliente.cpf || '-'}</td>
             <td>${cliente.telefone || '-'}</td>
             <td>${cliente.email || '-'}</td>
             <td>${formatDate(cliente.data_cadastro)}</td>
             <td>
                 <div class="action-buttons">
-                    <button class="action-btn edit" onclick="editCliente(${cliente.id_cliente})">
+                    <button class="action-btn edit" onclick="editCliente(${cliente.id_usuario})">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="action-btn delete" onclick="deleteCliente(${cliente.id_cliente})">
+                    <button class="action-btn delete" onclick="deleteCliente(${cliente.id_usuario})">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -283,10 +370,12 @@ function openModal(type, id = null) {
         case 'agendamento':
             modalTitle.textContent = id ? 'Editar Agendamento' : 'Novo Agendamento';
             modalForm.innerHTML = getAgendamentoForm(id);
+            fillSelectsAgendamento(); // <-- Adicione esta linha
             break;
         case 'venda':
             modalTitle.textContent = 'Nova Venda';
             modalForm.innerHTML = getVendaForm();
+            fillSelectsVenda(); // <-- Adicione esta linha
             break;
     }
     
@@ -400,38 +489,32 @@ function getAgendamentoForm(id) {
                 </select>
             </div>
             <div class="form-group">
-                <label for="id_funcionario">Funcionário *</label>
-                <select id="id_funcionario" class="form-control" required>
-                    <option value="">Selecione um funcionário</option>
+                <label for="id_funcionario">Funcionário (opcional)</label>
+                <select id="id_funcionario" class="form-control">
+                    <option value="">Automático</option>
                 </select>
             </div>
         </div>
         <div class="form-row">
             <div class="form-group">
-                <label for="id_servico">Serviço *</label>
-                <select id="id_servico" class="form-control" required>
-                    <option value="">Selecione um serviço</option>
-                </select>
+                <label for="servicos">Serviços (Ctrl+clique para múltiplos) *</label>
+                <select id="servicos" class="form-control" multiple required style="min-height:120px;"></select>
             </div>
-            <div class="form-group">
-                <label for="status">Status</label>
-                <select id="status" class="form-control">
-                    <option value="agendado">Agendado</option>
-                    <option value="confirmado">Confirmado</option>
-                    <option value="realizado">Realizado</option>
-                    <option value="cancelado">Cancelado</option>
-                    <option value="falta">Falta</option>
-                </select>
-            </div>
-        </div>
-        <div class="form-row">
             <div class="form-group">
                 <label for="data">Data *</label>
                 <input type="date" id="data" class="form-control" required>
             </div>
+        </div>
+        <div class="form-row">
             <div class="form-group">
                 <label for="hora">Hora *</label>
                 <input type="time" id="hora" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Duração Estimada</label>
+                <div id="duracao-estimada" class="form-control" style="background:#f5f5f5;">
+                    Selecione serviços
+                </div>
             </div>
         </div>
         <div class="form-group">
@@ -490,6 +573,95 @@ function getVendaForm() {
     `;
 }
 
+// Função para preencher selects do agendamento
+async function fillSelectsAgendamento() {
+    try {
+        const [clientes, funcionarios, servicos] = await Promise.all([
+            fetch('/api/clientes').then(res => res.json()),
+            fetch('/api/funcionarios').then(res => res.json()),
+            fetch('/api/servicos').then(res => res.json())
+        ]);
+        const clienteSelect = document.getElementById('id_cliente');
+        clientes.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id_usuario;
+            opt.textContent = c.nome || 'Cliente';
+            clienteSelect.appendChild(opt);
+        });
+        const funcionarioSelect = document.getElementById('id_funcionario');
+        funcionarios.forEach(f => {
+            const opt = document.createElement('option');
+            opt.value = f.id_usuario;
+            opt.textContent = f.nome;
+            funcionarioSelect.appendChild(opt);
+        });
+        const servicosSelect = document.getElementById('servicos');
+        servicos.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id_servico;
+            opt.textContent = `${s.nome_servico} (${s.duracao || '00:00:00'})`;
+            opt.dataset.duracao = s.duracao || '00:00:00';
+            servicosSelect.appendChild(opt);
+        });
+
+        // Atualiza duração estimada ao selecionar serviços
+        servicosSelect.addEventListener('change', () => {
+            const selecionados = Array.from(servicosSelect.selectedOptions).map(o => o.dataset.duracao);
+            const minutos = selecionados.reduce((acc, dur) => {
+                const [hh, mm, ss] = dur.split(':').map(Number);
+                return acc + hh * 60 + mm + (ss ? Math.round(ss/60) : 0);
+            }, 0);
+            const h = Math.floor(minutos/60).toString().padStart(2,'0');
+            const m = (minutos%60).toString().padStart(2,'0');
+            document.getElementById('duracao-estimada').textContent = minutos ? `${h}:${m}` : 'Selecione serviços';
+        });
+    } catch (error) {
+        showToast('Erro ao carregar opções do formulário', 'error');
+    }
+}
+
+// Função para preencher selects da venda
+async function fillSelectsVenda() {
+    try {
+        const [clientes, funcionarios, servicos, agendamentos] = await Promise.all([
+            fetch('/api/clientes').then(res => res.json()),
+            fetch('/api/funcionarios').then(res => res.json()),
+            fetch('/api/servicos').then(res => res.json()),
+            fetch('/api/agendamentos').then(res => res.json())
+        ]);
+        const clienteSelect = document.getElementById('id_cliente');
+        clientes.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id_usuario;
+            opt.textContent = c.nome;
+            clienteSelect.appendChild(opt);
+        });
+        const funcionarioSelect = document.getElementById('id_funcionario');
+        funcionarios.forEach(f => {
+            const opt = document.createElement('option');
+            opt.value = f.id_usuario;
+            opt.textContent = f.nome;
+            funcionarioSelect.appendChild(opt);
+        });
+        const servicoSelect = document.getElementById('id_servico');
+        servicos.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id_servico;
+            opt.textContent = s.nome_servico;
+            servicoSelect.appendChild(opt);
+        });
+        const agendamentoSelect = document.getElementById('id_agendamento');
+        agendamentos.forEach(a => {
+            const opt = document.createElement('option');
+            opt.value = a.id_agendamento;
+            opt.textContent = `#${a.id_agendamento} - ${a.cliente_nome || ''} (${a.data} ${a.hora})`;
+            agendamentoSelect.appendChild(opt);
+        });
+    } catch (error) {
+        showToast('Erro ao carregar opções do formulário', 'error');
+    }
+}
+
 // Preencher dados do formulário para edição
 async function fillFormData(type, id) {
     try {
@@ -539,30 +711,58 @@ async function saveData() {
         const url = currentEditId ? 
             `/api/${currentEditType}s/${currentEditId}` : 
             `/api/${currentEditType}s`;
-        
+
+        let payload = formData;
+        if (currentEditType === 'agendamento') {
+            // Monta payload conforme novo formato da API
+            const servicosEl = document.getElementById('servicos');
+            const selecionados = Array.from(servicosEl.selectedOptions).map(o => ({ id_servico: o.value }));
+            // Valida obrigatórios específicos de agendamento
+            if (!formData.id_cliente) { showToast('Selecione um cliente', 'warning'); hideLoading(); return; }
+            if (!formData.data) { showToast('Informe a data do agendamento', 'warning'); hideLoading(); return; }
+            if (!formData.hora) { showToast('Informe a hora do agendamento', 'warning'); hideLoading(); return; }
+            if (!selecionados.length) { showToast('Selecione ao menos um serviço', 'warning'); hideLoading(); return; }
+            payload = {
+                id_cliente: formData.id_cliente,
+                id_funcionario: formData.id_funcionario || null,
+                data_agendamento: formData.data,
+                hora_agendamento: formData.hora,
+                observacoes: formData.observacoes || null,
+                services: selecionados
+            };
+            if (currentEditId) {
+                // Para edição manter compatibilidade antiga
+                payload.status = formData.status || undefined;
+            }
+        }
+
         response = await fetch(url, {
             method: currentEditId ? 'PUT' : 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(formData)
+            body: JSON.stringify(payload)
         });
-        
+        const respText = await response.text();
+        let respData = {};
+        try { respData = respText ? JSON.parse(respText) : {}; } catch{}
         if (response.ok) {
-            showToast(
-                currentEditId ? 
+            let msgBase = currentEditId ? 
                 `${currentEditType.charAt(0).toUpperCase() + currentEditType.slice(1)} atualizado com sucesso!` :
-                `${currentEditType.charAt(0).toUpperCase() + currentEditType.slice(1)} criado com sucesso!`,
-                'success'
-            );
+                `${currentEditType.charAt(0).toUpperCase() + currentEditType.slice(1)} criado com sucesso!`;
+            if (currentEditType === 'agendamento' && respData && respData.funcionario) {
+                msgBase += ` | Funcionário: ${respData.funcionario} | Duração: ${respData.duration_minutes} min`;
+            }
+            showToast(msgBase, 'success');
             closeModal();
             refreshCurrentTab();
         } else {
-            throw new Error('Erro na requisição');
+            const msg = respData && (respData.error || respData.message || respText) || 'Erro na requisição';
+            throw new Error(msg);
         }
     } catch (error) {
-        showToast('Erro ao salvar dados', 'error');
-        console.error('Erro:', error);
+        showToast(error.message || 'Erro ao salvar dados', 'error');
+        console.error('Erro ao salvar:', error);
     } finally {
         hideLoading();
     }
@@ -615,7 +815,7 @@ function renderFuncionariosTable(funcionarios) {
     funcionarios.forEach(funcionario => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${funcionario.id_funcionario}</td>
+            <td>${funcionario.id_usuario}</td>
             <td>${funcionario.nome}</td>
             <td>${funcionario.telefone || '-'}</td>
             <td>
@@ -626,10 +826,10 @@ function renderFuncionariosTable(funcionarios) {
             <td>${formatDate(funcionario.data_cadastro)}</td>
             <td>
                 <div class="action-buttons">
-                    <button class="action-btn edit" onclick="editFuncionario(${funcionario.id_funcionario})">
+                    <button class="action-btn edit" onclick="editFuncionario(${funcionario.id_usuario})">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="action-btn delete" onclick="deleteFuncionario(${funcionario.id_funcionario})">
+                    <button class="action-btn delete" onclick="deleteFuncionario(${funcionario.id_usuario})">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -705,31 +905,52 @@ function renderAgendamentosTable(agendamentos) {
     
     agendamentos.forEach(agendamento => {
         const row = document.createElement('tr');
+        const podeConfirmar = String(agendamento.status).toLowerCase() === 'agendado';
         row.innerHTML = `
             <td>${agendamento.id_agendamento}</td>
             <td>${agendamento.cliente_nome}</td>
             <td>${agendamento.funcionario_nome}</td>
-            <td>${agendamento.nome_servico}</td>
+            <td>${(agendamento.servicos || agendamento.nome_servico || '').toString()}</td>
             <td>${formatDate(agendamento.data)}</td>
             <td>${agendamento.hora}</td>
+            <td>${agendamento.duracao_total || '-'}</td>
+            <td>${agendamento.hora_fim || '-'}</td>
             <td>
                 <span class="status-badge status-${agendamento.status}">
                     ${agendamento.status}
                 </span>
             </td>
             <td>
-                <div class="action-buttons">
-                    <button class="action-btn edit" onclick="editAgendamento(${agendamento.id_agendamento})">
+                <div class="action-buttons" style="gap:4px; display:flex;">
+                    <button class="action-btn edit" title="Editar" onclick="editAgendamento(${agendamento.id_agendamento})">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="action-btn delete" onclick="deleteAgendamento(${agendamento.id_agendamento})">
+                    <button class="action-btn delete" title="Excluir" onclick="deleteAgendamento(${agendamento.id_agendamento})">
                         <i class="fas fa-trash"></i>
                     </button>
+                    ${podeConfirmar ? `<button class="action-btn" style="background:#38a169;" title="Confirmar" onclick="confirmAgendamento(${agendamento.id_agendamento})"><i class="fas fa-check"></i></button>` : ''}
                 </div>
             </td>
         `;
         tbody.appendChild(row);
     });
+}
+
+async function confirmAgendamento(id) {
+    if (!id) return;
+    if (!confirm('Confirmar este agendamento?')) return;
+    showLoading();
+    try {
+        const res = await fetch(`/api/agendamentos/${id}/confirmar`, { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Falha ao confirmar');
+        showToast('Agendamento confirmado!', 'success');
+        refreshCurrentTab();
+    } catch (e) {
+        showToast(e.message, 'error');
+    } finally {
+        hideLoading();
+    }
 }
 
 async function loadVendas() {
@@ -791,31 +1012,31 @@ function editAgendamento(id) {
 
 // Funções de exclusão
 async function deleteCliente(id) {
-    if (confirm('Tem certeza que deseja excluir este cliente?')) {
+    if (confirm('Inativar este cliente?')) {
         await deleteItem('clientes', id);
     }
 }
 
 async function deleteFuncionario(id) {
-    if (confirm('Tem certeza que deseja excluir este funcionário?')) {
+    if (confirm('Inativar este funcionário?')) {
         await deleteItem('funcionarios', id);
     }
 }
 
 async function deleteServico(id) {
-    if (confirm('Tem certeza que deseja excluir este serviço?')) {
+    if (confirm('Inativar este serviço?')) {
         await deleteItem('servicos', id);
     }
 }
 
 async function deleteAgendamento(id) {
-    if (confirm('Tem certeza que deseja excluir este agendamento?')) {
+    if (confirm('Cancelar este agendamento?')) {
         await deleteItem('agendamentos', id);
     }
 }
 
 async function deleteVenda(id) {
-    if (confirm('Tem certeza que deseja excluir esta venda?')) {
+    if (confirm('Inativar esta venda?')) {
         await deleteItem('vendas', id);
     }
 }
@@ -823,18 +1044,23 @@ async function deleteVenda(id) {
 async function deleteItem(type, id) {
     showLoading();
     try {
-        const response = await fetch(`/api/${type}/${id}`, {
-            method: 'DELETE'
-        });
-        
+        let endpoint;
+        switch(type){
+            case 'clientes': endpoint = `/api/clientes/${id}/inativar`; break;
+            case 'funcionarios': endpoint = `/api/funcionarios/${id}/inativar`; break;
+            case 'servicos': endpoint = `/api/servicos/${id}/inativar`; break;
+            case 'agendamentos': endpoint = `/api/agendamentos/${id}/cancelar`; break;
+            default: endpoint = `/api/${type}/${id}`; // fallback
+        }
+        const response = await fetch(endpoint, { method: 'POST' });
         if (response.ok) {
-            showToast('Item excluído com sucesso!', 'success');
+            showToast('Item inativado com sucesso!', 'success');
             refreshCurrentTab();
         } else {
             throw new Error('Erro na requisição');
         }
     } catch (error) {
-        showToast('Erro ao excluir item', 'error');
+        showToast('Erro ao inativar item', 'error');
         console.error('Erro:', error);
     } finally {
         hideLoading();
@@ -844,6 +1070,55 @@ async function deleteItem(type, id) {
 // Relatórios
 function loadRelatorios() {
     // Implementar carregamento de relatórios se necessário
+}
+
+// ===== Configurações =====
+async function loadConfig() {
+    const token = localStorage.getItem('token');
+    if (!token || !currentUser || !['Gerente','Dono'].includes(currentUser.role)) {
+        const input = document.getElementById('no_show_grace');
+        if (input) input.disabled = true;
+        const btn = document.getElementById('salvar-config-btn');
+        if (btn) btn.style.display = 'none';
+        return;
+    }
+    try {
+        const res = await fetch('/api/config', { headers: { Authorization: 'Bearer ' + token } });
+        const data = await res.json();
+        if (res.ok) {
+            const grace = document.getElementById('no_show_grace');
+            if (grace) grace.value = data.no_show_grace || 10;
+        }
+    } catch(e) {
+        showToast('Falha ao carregar configurações', 'error');
+    }
+    const btn = document.getElementById('salvar-config-btn');
+    if (btn) {
+        btn.onclick = saveConfig;
+    }
+}
+
+async function saveConfig() {
+    const token = localStorage.getItem('token');
+    if (!token) { showToast('Sem token', 'error'); return; }
+    const valEl = document.getElementById('no_show_grace');
+    const valor = Number(valEl.value);
+    if (!Number.isFinite(valor) || valor < 0 || valor > 240) {
+        showToast('Valor inválido (0-240)', 'warning');
+        return;
+    }
+    try {
+        const res = await fetch('/api/config/no_show_grace', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+            body: JSON.stringify({ valor })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erro ao salvar');
+        showToast('Configuração salva', 'success');
+    } catch(e) {
+        showToast(e.message, 'error');
+    }
 }
 
 function gerarRelatorioVendas() {
@@ -909,3 +1184,25 @@ function showToast(message, type = 'info') {
         toast.remove();
     }, 3000);
 }
+
+// Tema claro/escuro
+document.addEventListener('DOMContentLoaded', () => {
+    const themeBtn = document.getElementById('toggle-theme-btn');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    let theme = localStorage.getItem('theme') || (prefersDark ? 'dark' : 'light');
+    setTheme(theme);
+
+    themeBtn.addEventListener('click', () => {
+        theme = (theme === 'dark') ? 'light' : 'dark';
+        setTheme(theme);
+        localStorage.setItem('theme', theme);
+    });
+
+    function setTheme(theme) {
+        document.body.classList.remove('theme-light', 'theme-dark');
+        document.body.classList.add(`theme-${theme}`);
+        themeBtn.innerHTML = theme === 'dark'
+            ? '<i class="fas fa-sun"></i>'
+            : '<i class="fas fa-moon"></i>';
+    }
+});

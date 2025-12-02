@@ -1,2 +1,33 @@
+# Ignorar tudo por padrão
+*
 
+# Não ignorar este arquivo
+!.gitIgnore
+
+# Permitir somente código e README
+!/server.js
+!/package.json
+!/README.md
+!/api/**
+!/database/**
+!/frontend/**
+!/Igdm/**
+!/Igfc/**
+!/public/**
+
+# Ainda ignorar arquivos sensíveis e de ambiente mesmo dentro das pastas permitidas
+.env
+config.env
+.env.*
+*.log
+logs/
+tmp/
 node_modules/
+dist/
+build/
+coverage/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini

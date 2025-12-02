@@ -9,17 +9,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <h1><i class="fas fa-cut"></i> Barbearia IA</h1>
-                <p>Sistema de Gerenciamento Inteligente</p>
-            </div>
-        </header>
-
-        <!-- Navigation -->
-        <nav class="nav">
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2><i class="fas fa-cut"></i> BARBEARIA IA</h2>
+            <button class="sidebar-close" id="sidebar-close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <nav class="sidebar-nav">
             <button class="nav-btn active" data-tab="dashboard">
                 <i class="fas fa-tachometer-alt"></i> Dashboard
             </button>
@@ -41,7 +39,36 @@
             <button class="nav-btn" data-tab="relatorios">
                 <i class="fas fa-chart-bar"></i> Relatórios
             </button>
+            <button class="nav-btn" data-tab="config">
+                <i class="fas fa-cogs"></i> Configurações
+            </button>
         </nav>
+    </div>
+
+    <!-- Overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- Botão Hambúrguer -->
+    <button class="hamburger-btn" id="hamburger-btn">
+        <div class="hamburger-line"></div>
+        <div class="hamburger-line"></div>
+        <div class="hamburger-line"></div>
+    </button>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-cut"></i> BARBEARIA IA</h1>
+                <p>Sistema de Gerenciamento Inteligente</p>
+            </div>
+            <div class="header-actions">
+                <span id="user-info" class="user-info"></span>
+                <button class="btn btn-secondary" id="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Sair
+                </button>
+            </div>
+        </header>
 
         <!-- Main Content -->
         <main class="main-content">
@@ -219,6 +246,8 @@
                                 <th>Serviço</th>
                                 <th>Data</th>
                                 <th>Hora</th>
+                                <th>Duração</th>
+                                <th>Fim</th>
                                 <th>Status</th>
                                 <th>Ações</th>
                             </tr>
@@ -259,7 +288,7 @@
                             </tr>
                         </thead>
                         <tbody id="vendas-tbody">
-                            <!-- Dados serão carregados via JavaScript -->
+                           <!-- Dados  serão carregados via JavaScript -->
                         </tbody>
                     </table>
                 </div>
@@ -306,6 +335,24 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Configurações -->
+            <div id="config" class="tab-content">
+                <div class="section-header">
+                    <h2><i class="fas fa-cogs"></i> Configurações do Sistema</h2>
+                </div>
+                <div class="card" style="max-width:480px;">
+                    <div class="card-header"><h3>Parâmetros de Funcionários / Agenda</h3></div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="no_show_grace">Tolerância (min) para marcar falta</label>
+                            <input type="number" id="no_show_grace" class="form-control" min="0" max="240" step="1" placeholder="10">
+                        </div>
+                        <button class="btn btn-primary" id="salvar-config-btn"><i class="fas fa-save"></i> Salvar</button>
+                    </div>
+                </div>
+                <p style="margin-top:1rem; font-size:0.9rem; opacity:0.8;">Somente Gerente ou Dono podem alterar estas configurações.</p>
+            </div>
         </main>
     </div>
 
@@ -336,6 +383,12 @@
 
     <!-- Toast Notifications -->
     <div id="toast-container" class="toast-container"></div>
+
+    <div class="theme-toggle">
+        <button id="toggle-theme-btn" title="Alternar tema">
+            <i class="fas fa-moon"></i>
+        </button>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="script.js"></script>
